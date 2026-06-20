@@ -29,7 +29,7 @@ Hybrid static application security testing (SAST) pipeline that combines determi
 # Install dependencies
 pip install -r requirements.txt
 
-# Set API key
+# Set API key (get one at https://console.anthropic.com → API Keys)
 export ANTHROPIC_API_KEY="your-key-here"
 
 # Scan a directory
