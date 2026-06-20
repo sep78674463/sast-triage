@@ -53,15 +53,16 @@ def run(
         commit_sha: Git SHA of scanned commit (stored in Finding metadata).
         repo: Repository name (stored in Finding metadata).
     """
+    abs_target = os.path.abspath(target_dir)
     configs = _build_configs(rules, custom_rule_files)
-    cmd = ["semgrep"] + configs + [target_dir, "--json", "--quiet"]
+    # Pass "." and run from abs_target so Semgrep's git context resolves correctly
+    cmd = ["semgrep"] + configs + [".", "--json", "--quiet"]
 
     if languages:
         for lang in languages:
             cmd += ["--include", f"*.{_lang_extension(lang)}"]
 
-    # Run from the target directory so Semgrep uses the correct git context
-    result = subprocess.run(cmd, capture_output=True, text=True, cwd=target_dir)
+    result = subprocess.run(cmd, capture_output=True, text=True, cwd=abs_target)
 
     try:
         raw = json.loads(result.stdout)
@@ -71,7 +72,9 @@ def run(
 
     findings = []
     for match in raw.get("results", []):
-        file_path = match.get("path", "")
+        raw_path = match.get("path", "")
+        # Semgrep returns paths relative to cwd; make them absolute
+        file_path = raw_path if os.path.isabs(raw_path) else os.path.join(abs_target, raw_path)
         line_start = match.get("start", {}).get("line", 0)
         line_end = match.get("end", {}).get("line", line_start)
         rule_id = match.get("check_id", "unknown")
@@ -111,7 +114,8 @@ def _build_configs(rules: list[str] | None, custom_files: list[str] | None) -> l
     for r in effective_rules:
         configs += ["--config", r]
     for f in (custom_files or []):
-        configs += ["--config", f]
+        # Resolve to absolute path so the config is found regardless of subprocess cwd
+        configs += ["--config", os.path.abspath(f)]
     return configs
 
 
