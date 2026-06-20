@@ -32,20 +32,33 @@ pip install -r requirements.txt
 # Set API key (get one at https://console.anthropic.com → API Keys)
 export ANTHROPIC_API_KEY="your-key-here"
 
-# Scan a directory
-python3 -m scanner.run --target ./src
+# Scan with the bundled custom rules (no Semgrep login required)
+python3 -m scanner.run --target ./src \
+  --custom-rules scanner/rules/python-injection.yaml \
+               scanner/rules/secrets.yaml \
+               scanner/rules/crypto.yaml
 
 # Dry run (Semgrep only, no Claude)
-python3 -m scanner.run --target ./src --dry-run
+python3 -m scanner.run --target ./src --custom-rules scanner/rules/python-injection.yaml --dry-run
 
 # Use category-specialized agents (higher accuracy)
-python3 -m scanner.run --target ./src --specialist
+python3 -m scanner.run --target ./src \
+  --custom-rules scanner/rules/python-injection.yaml \
+               scanner/rules/secrets.yaml \
+               scanner/rules/crypto.yaml \
+  --specialist
+
+# Use Semgrep registry packs (requires `semgrep login`)
+python3 -m scanner.run --target ./src --rules p/python p/secrets p/owasp-top-ten
 
 # Export results
 python3 -m scanner.run --target ./src \
+  --custom-rules scanner/rules/python-injection.yaml \
   --output-json outputs/findings.json \
   --output-sarif outputs/results.sarif
 ```
+
+> **Note on Semgrep registry packs** (`p/python`, `p/owasp-top-ten`, etc.): these require a free Semgrep account and `semgrep login`. The bundled `scanner/rules/` custom rules work offline with no login required. When `--custom-rules` is provided and `--rules` is not, registry packs are skipped automatically.
 
 ## CLI Options
 
@@ -110,7 +123,19 @@ Once the secret is set, push to trigger it. The workflow runs on every PR:
 
 ## Connecting to PaC
 
-Confirmed findings can be exported and ingested into the [PaC GRC platform](https://github.com/SEPCyber/OSCAL) via the `ingest/vuln/adapters/semgrep.py` adapter (forthcoming). This links SAST findings to asset nodes, NIST controls, and POA&M items in the compliance graph.
+The PaC GRC platform (`localhost:8000`) includes a **SAST Triage** card on its dashboard that runs this scanner with one click and displays confirmed vulnerabilities inline. The `/sast/run` endpoint in `pac_api.py` spawns the scanner as a subprocess and returns results as JSON.
+
+Confirmed findings can also be ingested into PaC's Neo4j graph via the `ingest/vuln/adapters/semgrep.py` adapter (forthcoming), linking SAST findings to asset nodes, NIST controls, and POA&M items.
+
+**PaC startup (required for dashboard integration):**
+```bash
+source ~/.zshrc   # loads ANTHROPIC_API_KEY and NEO4J_BOLT
+cd ~/Applications/PaC && python3 pac_api.py
+```
+
+## Build Playbook
+
+Session-by-session record of how this project was designed and built, including architecture decisions, bugs encountered, and fixes applied: [`docs/build-playbook.md`](docs/build-playbook.md).
 
 ## Environment Variables
 
