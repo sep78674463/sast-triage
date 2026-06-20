@@ -1,0 +1,60 @@
+name: SAST Triage
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write   # required for uploading SARIF to GitHub Code Scanning
+
+jobs:
+  sast-triage:
+    name: Semgrep + Claude Triage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run hybrid SAST scan
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python3 -m scanner.run \
+            --target . \
+            --specialist \
+            --severity medium \
+            --output-json outputs/findings.json \
+            --output-sarif outputs/results.sarif
+        # Exit code 1 = confirmed vulnerabilities found; don't fail the build here,
+        # let GitHub Code Scanning surface them. Change to: || true if you want
+        # the workflow to always pass.
+        continue-on-error: true
+
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: outputs/results.sarif
+          category: sast-triage
+
+      - name: Upload findings artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sast-findings-${{ github.sha }}
+          path: outputs/findings.json
+          retention-days: 30

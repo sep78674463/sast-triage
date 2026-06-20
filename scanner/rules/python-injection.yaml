@@ -1,0 +1,53 @@
+rules:
+  - id: raw-sql-string-format
+    patterns:
+      - pattern: cursor.execute($SQL % ...)
+      - pattern: cursor.execute($SQL.format(...))
+      - pattern: cursor.execute(f"... {$VAR} ...")
+    message: "Potential SQL injection via string formatting. Use parameterized queries."
+    languages: [python]
+    severity: ERROR
+    metadata:
+      cwe: CWE-89
+      owasp: A03:2021
+
+  - id: raw-sql-concatenation
+    pattern: cursor.execute($A + $B)
+    message: "Potential SQL injection via string concatenation."
+    languages: [python]
+    severity: ERROR
+    metadata:
+      cwe: CWE-89
+      owasp: A03:2021
+
+  - id: subprocess-shell-true
+    patterns:
+      - pattern: subprocess.run(..., shell=True, ...)
+      - pattern: subprocess.call(..., shell=True, ...)
+      - pattern: subprocess.Popen(..., shell=True, ...)
+    message: "Command injection risk: shell=True with variable input."
+    languages: [python]
+    severity: ERROR
+    metadata:
+      cwe: CWE-78
+      owasp: A03:2021
+
+  - id: os-system-variable
+    pattern: os.system($CMD)
+    message: "os.system() with variable input is a command injection risk."
+    languages: [python]
+    severity: ERROR
+    metadata:
+      cwe: CWE-78
+      owasp: A03:2021
+
+  - id: path-traversal-open
+    patterns:
+      - pattern: open($PATH)
+      - pattern: open(os.path.join(..., $USER_INPUT, ...))
+    message: "Potential path traversal if path includes user-controlled input."
+    languages: [python]
+    severity: WARNING
+    metadata:
+      cwe: CWE-22
+      owasp: A01:2021
