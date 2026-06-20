@@ -60,7 +60,8 @@ def run(
         for lang in languages:
             cmd += ["--include", f"*.{_lang_extension(lang)}"]
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    # Run from the target directory so Semgrep uses the correct git context
+    result = subprocess.run(cmd, capture_output=True, text=True, cwd=target_dir)
 
     try:
         raw = json.loads(result.stdout)
@@ -104,7 +105,10 @@ def run(
 
 def _build_configs(rules: list[str] | None, custom_files: list[str] | None) -> list[str]:
     configs = []
-    for r in (rules or DEFAULT_RULES):
+    # Only use DEFAULT_RULES when no custom files are supplied and no explicit rules given.
+    # Registry packs require a network call / login and fail silently in offline/CI environments.
+    effective_rules = rules if rules is not None else ([] if custom_files else DEFAULT_RULES)
+    for r in effective_rules:
         configs += ["--config", r]
     for f in (custom_files or []):
         configs += ["--config", f]

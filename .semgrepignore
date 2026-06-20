@@ -1,0 +1,7 @@
+# Ignore dependency and build artifacts — scan everything else
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+outputs/

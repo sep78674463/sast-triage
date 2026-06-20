@@ -1,9 +1,7 @@
 rules:
   - id: raw-sql-string-format
-    patterns:
-      - pattern: cursor.execute($SQL % ...)
-      - pattern: cursor.execute($SQL.format(...))
-      - pattern: cursor.execute(f"... {$VAR} ...")
+    pattern: |
+      $CURSOR.execute("..." % ...)
     message: "Potential SQL injection via string formatting. Use parameterized queries."
     languages: [python]
     severity: ERROR
@@ -11,9 +9,20 @@ rules:
       cwe: CWE-89
       owasp: A03:2021
 
-  - id: raw-sql-concatenation
-    pattern: cursor.execute($A + $B)
-    message: "Potential SQL injection via string concatenation."
+  - id: raw-sql-format-method
+    pattern: |
+      $CURSOR.execute("...".format(...))
+    message: "Potential SQL injection via .format(). Use parameterized queries."
+    languages: [python]
+    severity: ERROR
+    metadata:
+      cwe: CWE-89
+      owasp: A03:2021
+
+  - id: raw-sql-fstring
+    pattern: |
+      $CURSOR.execute(f"...")
+    message: "Potential SQL injection via f-string. Use parameterized queries."
     languages: [python]
     severity: ERROR
     metadata:
@@ -25,7 +34,7 @@ rules:
       - pattern: subprocess.run(..., shell=True, ...)
       - pattern: subprocess.call(..., shell=True, ...)
       - pattern: subprocess.Popen(..., shell=True, ...)
-    message: "Command injection risk: shell=True with variable input."
+    message: "Command injection risk: shell=True passes input to a shell."
     languages: [python]
     severity: ERROR
     metadata:
@@ -42,9 +51,7 @@ rules:
       owasp: A03:2021
 
   - id: path-traversal-open
-    patterns:
-      - pattern: open($PATH)
-      - pattern: open(os.path.join(..., $USER_INPUT, ...))
+    pattern: open($PATH, ...)
     message: "Potential path traversal if path includes user-controlled input."
     languages: [python]
     severity: WARNING

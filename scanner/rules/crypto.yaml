@@ -1,21 +1,17 @@
 rules:
   - id: weak-hash-md5
-    patterns:
-      - pattern: hashlib.md5(...)
-      - pattern: MD5(...)
+    pattern: hashlib.md5(...)
     message: "MD5 is cryptographically broken. Use SHA-256 or SHA-3 for security purposes."
-    languages: [python, javascript, java]
+    languages: [python]
     severity: WARNING
     metadata:
       cwe: CWE-327
       owasp: A02:2021
 
   - id: weak-hash-sha1
-    patterns:
-      - pattern: hashlib.sha1(...)
-      - pattern: SHA1(...)
+    pattern: hashlib.sha1(...)
     message: "SHA-1 is deprecated for security use. Use SHA-256 or SHA-3."
-    languages: [python, javascript, java]
+    languages: [python]
     severity: WARNING
     metadata:
       cwe: CWE-327
@@ -34,9 +30,8 @@ rules:
     patterns:
       - pattern: random.random()
       - pattern: random.randint(...)
-      - pattern: Math.random()
-    message: "Cryptographically weak PRNG. Use secrets.token_bytes() or crypto.getRandomValues()."
-    languages: [python, javascript]
+    message: "Cryptographically weak PRNG. Use secrets.token_bytes() for security purposes."
+    languages: [python]
     severity: WARNING
     metadata:
       cwe: CWE-338
