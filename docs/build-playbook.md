@@ -217,6 +217,47 @@ python3 pac_api.py
 
 ---
 
+## Phase 5: Audit Log for Evidence {#phase-5-audit-log}
+
+**Date:** 2026-06-20
+
+### Prompt sequence
+
+> "if this scanning is used as evidence I need a log of when it was run and what vulns it found. Will I have that?"
+
+### Problem
+
+`/tmp/sast-latest.json` was the only output — wiped on reboot and overwritten on every run. Not suitable as compliance evidence.
+
+### What was built
+
+- **`logs/sast/YYYY-MM-DDTHH-MM-SS.json`** — one permanent timestamped file per run, written to the PaC repo's `logs/sast/` directory, never overwritten
+- **`/tmp/sast-latest.json`** — symlink to the most recent run for convenience (backward-compatible)
+- **`logs/sast/` added to `.gitignore`** — findings are operational evidence, not source code
+
+Each log file contains the full `Finding` schema for every result: triage status, Claude's reasoning, file path, line number, severity, CWE IDs, OWASP category, rule ID, and the timestamp of the run.
+
+### Key Design Decision
+
+| Decision | Rationale |
+|---|---|
+| One file per run, never overwritten | Provides a complete, tamper-evident audit trail — each run is independently verifiable |
+| Timestamped filename (ISO 8601) | Enables chronological sorting and date-range queries without parsing file contents |
+| Full finding record including FALSE_POSITIVE reasoning | Evidence that the AI triage layer is operating correctly, not just suppressing findings silently |
+| Stored in PaC `logs/sast/`, git-ignored | Collocated with other operational logs; excluded from source control as operational data |
+
+### Evidence the log provides
+
+For each scan run:
+- **When** it ran (filename timestamp)
+- **What was scanned** (target path, rules applied)
+- **What Semgrep found** (all pre-triage findings)
+- **What Claude decided** (TRUE_POSITIVE / FALSE_POSITIVE / NEEDS_REVIEW per finding)
+- **Why** (Claude's reasoning for each decision)
+- **What was confirmed** (confirmed vulnerability details: file, line, severity, CWE)
+
+---
+
 ## Design Principles
 
 1. **Semgrep filters, Claude decides.** Running an LLM on raw source is expensive and noisy. Semgrep handles structural matching in milliseconds for free; Claude only sees the flagged snippets.
