@@ -32,7 +32,10 @@ _client: anthropic.Anthropic | None = None
 def _get_client() -> anthropic.Anthropic:
     global _client
     if _client is None:
-        _client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        key = os.environ.get("ANTHROPIC_API_KEY")
+        if not key:
+            raise ValueError("ANTHROPIC_API_KEY environment variable is not set")
+        _client = anthropic.Anthropic(api_key=key)
     return _client
 
 
@@ -75,8 +78,7 @@ def triage_finding(finding: Finding) -> Finding:
             response = _get_client().messages.create(
                 model=MODEL,
                 max_tokens=MAX_TOKENS,
-                temperature=0.0,
-                system=SYSTEM_PROMPT,
+                    system=SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": prompt}],
             )
             raw = response.content[0].text.strip()

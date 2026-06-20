@@ -25,7 +25,10 @@ _client: anthropic.Anthropic | None = None
 def _get_client() -> anthropic.Anthropic:
     global _client
     if _client is None:
-        _client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        key = os.environ.get("ANTHROPIC_API_KEY")
+        if not key:
+            raise ValueError("ANTHROPIC_API_KEY environment variable is not set")
+        _client = anthropic.Anthropic(api_key=key)
     return _client
 
 
@@ -75,7 +78,6 @@ CWEs: {', '.join(finding.cwe_ids) or 'unknown'}
         response = _get_client().messages.create(
             model=MODEL,
             max_tokens=MAX_TOKENS,
-            temperature=0.0,
             system=system,
             messages=[{"role": "user", "content": prompt}],
         )
