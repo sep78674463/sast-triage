@@ -91,7 +91,18 @@ The `--specialist` flag routes each finding to a domain-specific agent with a ti
 
 ## GitHub Actions
 
-Add `ANTHROPIC_API_KEY` as a repository secret, then push. The workflow runs on every PR:
+### Adding the API key secret
+
+1. Go to your repository on GitHub
+2. **Settings → Secrets and variables → Actions → New repository secret**
+3. Name: `ANTHROPIC_API_KEY`, Value: your Anthropic API key
+4. Click **Add secret**
+
+The workflow will then have access to the key on every PR and push.
+
+### What the workflow does
+
+Once the secret is set, push to trigger it. The workflow runs on every PR:
 1. Semgrep scans the repo
 2. Claude triages findings at `--severity medium` and above
 3. SARIF is uploaded to GitHub Code Scanning (appears as PR annotations)
